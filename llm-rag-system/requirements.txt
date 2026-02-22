@@ -1,6 +1,12 @@
+llama-index
+llama-index-embeddings-huggingface
+sentence-transformers
+torch
 fastapi
 uvicorn[standard]
-llama-index
 chromadb
 pydantic
 python-dotenv
+accelerate
+llama-index-llms-huggingface
+transformers
