@@ -1,23 +1,24 @@
-import logging
-from fastapi import FastAPI
+#import logging
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from ml.rag.base_rag import BaseRAGPipeline
+#from ml.rag.base_rag import BaseRAGPipeline
 #from llm-rag-system.ml.rag.base_rag import BaseRAGPipeline
+from .schemas.rag import RAGQueryRequest, RAGQueryResponse
+from .service.rag_pipeline import rag_pipeline
+from backend.common.logging.logger import logger
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+#logging.basicConfig(
+#    level=logging.INFO,
+#    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+#)
 
-logger = logging.getLogger("RAGService")
+#logger = logging.getLogger("RAGService")
 
 app = FastAPI(
-    title="ManusAge - RAG Service",
-    description="Core RAG microservice for ManusAge project",
-    version="0.1.0"
+    title="RAG Service"
 )
 
-rag_pipeline = BaseRAGPipeline()
+#rag_pipeline = BaseRAGPipeline()
 
 # Request model
 class QueryRequest(BaseModel):
@@ -29,27 +30,14 @@ def health_check():
     return {"status": "ok", "service": "rag_service"}
 
 # Placeholder RAG endpoint
-@app.post("/query")
-async def query_rag(request: QueryRequest):
+@app.post("/query", response_model = RAGQueryResponse)
+async def query_rag(request: RAGQueryRequest):
+    logger.info("Received a new RAG query request.")
     try:
-        logger.info(f"Received query: {request.query}")
-
-        # Build index only once
-        if rag_pipeline.index is None:
-            logger.info("Building RAG index for the first time...")
-            rag_pipeline.build_index()
-            logger.info("RAG index built successfully.")
-
-        # Query the index
-        response = rag_pipeline.query(request.query)
-        logger.info("Query executed successfully.")
-
-        return {
-            "query": request.query,
-            "answer": str(response),
-            "sources": []
-        }
+        result = await rag_pipeline.run(request.query)
+        logger.info("RAG query processed successfully.")
+        return RAGQueryResponse(answer=result["answer"], sources=result["sources"])
 
     except Exception as e:
-        logger.error(f"Error in RAG query: {str(e)}")
-        return {"error": str(e)}
+        logger.error(f"RAG pipeline execution failed: {e}")
+        return HTTPException(status_code=500, detail="RAG pipeline execution failed.")

@@ -10,3 +10,5 @@ python-dotenv
 accelerate
 llama-index-llms-huggingface
 transformers
+asyncpg
+
